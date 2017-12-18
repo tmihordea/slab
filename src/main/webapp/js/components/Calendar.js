@@ -37,19 +37,19 @@ type CustomChartTooltipProps = {
     label: string,
 };
 function CustomChartTooltip(props: CustomChartTooltipProps){
-    const { active } = props;
-    if (active) {
-        const { payload, label } = props;
-        return (
-            <div className="custom-chart-tooltip">
-                <div className="label-value">
-                    <span className="label">{moment(label).format(fullDateFormat)}</span>:<br/>
-                    <span className="value">{numeral(payload[0].value).format('0.00%')}</span>
-                </div>
-            </div>
-        );
-    }
-    return null;
+  const { active } = props;
+  if (active) {
+    const { payload, label } = props;
+    return (
+      <div className="custom-chart-tooltip">
+          <div className="label-value">
+              <span className="label">{moment(label).format(fullDateFormat)}</span>:<br/>
+              <span className="value">{numeral(payload[0].value).format('0.00%')}</span>
+          </div>
+      </div>
+    );
+  }
+  return null;
 }
 
 type ThresholdFillBarProps = {
@@ -61,66 +61,66 @@ type ThresholdFillBarProps = {
     threshold: number,
 };
 function ThresholdFillBar(props: ThresholdFillBarProps) {
-    const getPath = (x, y, width, height) => `M${x},${y} h ${width} v ${height} h -${width} Z`;
-    const { x, y, width, height, value, threshold } = props;
+  const getPath = (x, y, width, height) => `M${x},${y} h ${width} v ${height} h -${width} Z`;
+  const { x, y, width, height, value, threshold } = props;
 
-    const pathClassName = classNames({
-       'recharts-rectangle': true,
-        good: value && threshold && value >= threshold,
-        bad: value && threshold && value < threshold,
-    });
+  const pathClassName = classNames({
+    'recharts-rectangle': true,
+    good: value && threshold && value >= threshold,
+    bad: value && threshold && value < threshold,
+  });
 
-    return <path d={getPath(x, y, width, height)} className={pathClassName}/>;
+  return <path d={getPath(x, y, width, height)} className={pathClassName}/>;
 }
 
 class Calendar extends PureComponent {
-    props: CalendarProps;
-    state = {
-        flipped: false,
+  props: CalendarProps;
+  state = {
+    flipped: false,
+  };
+
+  constructor(props: CalendarProps) {
+    super(props);
+    this.props.fetchStats();
+  }
+
+  render() {
+    const buildDomain = (data, slo) => {
+      const values = data && data.length > 0 && data.map(x => x.percent) || [0, 1];
+      const [min, max] = [Math.min(...values), Math.max(...values)];
+      return data && data.length > 1 && min !== max
+        ? min > slo * 0.9 ? [slo * 0.9, 1] : ['auto', 1]
+        : [0, 1];
     };
 
-    constructor(props: CalendarProps) {
-        super(props);
-        this.props.fetchStats();
-    }
+    const {isOpen, selectedDay, onDayClick, onCloseClick, stats, slo} = this.props;
+    const {flipped} = this.state;
 
-    render() {
-        const buildDomain = (data, slo) => {
-            const values = data && data.length > 0 && data.map(x => x.percent) || [0, 1];
-            const [min, max] = [Math.min(...values), Math.max(...values)];
-            return data && data.length > 1 && min !== max
-                ? min > slo * 0.9 ? [slo * 0.9, 1] : ['auto', 1]
-                : [0, 1]
-        };
+    const data = stats && Object.keys(stats.daily)
+      .map(key => ({date: Number(key), percent: stats.daily[Number(key)]}))
+      .sort((a, b) => a.date - b.date);
 
-        const {isOpen, selectedDay, onDayClick, onCloseClick, stats, slo} = this.props;
-        const {flipped} = this.state;
+    const wrapperClass = classNames({
+      'calendar-chart-wrapper': true,
+      closed: !isOpen,
+      flipped: flipped,
+    });
 
-        const data = stats && Object.keys(stats.daily)
-            .map(key => ({date: Number(key), percent: stats.daily[Number(key)]}))
-            .sort((a, b) => a.date - b.date);
+    const flipperClass = classNames({
+      flipper: true,
+      flipped: flipped,
+    });
 
-        const wrapperClass = classNames({
-            'calendar-chart-wrapper': true,
-            closed: !isOpen,
-            flipped: flipped,
-        });
+    const flipViewButtonClass = classNames({
+      'flip-view-button': true,
+      chart: !flipped,
+      calendar: flipped,
+    });
 
-        const flipperClass = classNames({
-            flipper: true,
-            flipped: flipped,
-        });
-
-        const flipViewButtonClass = classNames({
-            'flip-view-button': true,
-            chart: !flipped,
-            calendar: flipped,
-        });
-
-        return (
-            <div className={wrapperClass}>
-                <div className={flipperClass}>
-                    <Datetime className={'front'}
+    return (
+      <div className={wrapperClass}>
+          <div className={flipperClass}>
+              <Datetime className={'front'}
                         value={selectedDay}
                         input={false} timeFormat={false}
                         renderDay={this.renderDay(stats && stats.daily, slo)}
@@ -128,95 +128,93 @@ class Calendar extends PureComponent {
                         renderYear={this.renderYear(stats && stats.yearly, slo)}
                         onChange={onDayClick}
                         isValidDate={this.validateDate}
-                    />
-                    {
-                        data && data.length > 0 &&
-                        (<ResponsiveContainer className="back" width="100%" height="100%">
-                            <BarChart data={data} margin={{left: -20}}>
-                                <XAxis dataKey="date" tickFormatter={this.xAxisTickFormatter}/>
-                                <YAxis domain={buildDomain(data, slo)}
-                                       tickFormatter={this.yAxisTickFormatter}/>
-                                <Tooltip content={<CustomChartTooltip payload label active/>}/>
-                                <Brush dataKey='date' height={30} tickFormatter={this.xAxisTickFormatter}
-                                       startIndex={Math.max(0, data.length - 31)}
-                                       endIndex={Math.max(0, data.length - 1)}
-                                       travellerWidth={10}/>
-                                <Bar dataKey="percent" shape={<ThresholdFillBar y x width height value threshold={slo}/>}/>
-                                <ReferenceLine y={slo} label="SLO"/>
-                            </BarChart>
-                        </ResponsiveContainer>)
-                    }
-                </div>
-
-                <button className="close-button" onClick={onCloseClick}>×</button>
-                { data && data.length > 0 &&
-                    (<button className={flipViewButtonClass} onClick={this.onFlipView}>{flipped}</button>)
-                }
+              />
+              { data && data.length > 0 &&
+                (<ResponsiveContainer className="back" width="100%" height="100%">
+                    <BarChart data={data} margin={{left: -20}}>
+                        <XAxis dataKey="date" tickFormatter={this.xAxisTickFormatter}/>
+                        <YAxis domain={buildDomain(data, slo)}
+                               tickFormatter={this.yAxisTickFormatter}/>
+                        <Tooltip content={<CustomChartTooltip payload label active/>}/>
+                        <Brush dataKey='date' height={30} tickFormatter={this.xAxisTickFormatter}
+                               startIndex={Math.max(0, data.length - 31)}
+                               endIndex={Math.max(0, data.length - 1)}
+                               travellerWidth={10}/>
+                        <Bar dataKey="percent" shape={<ThresholdFillBar y x width height value threshold={slo}/>}/>
+                        <ReferenceLine y={slo} label="SLO"/>
+                    </BarChart>
+                </ResponsiveContainer>)
+              }
             </div>
-        );
-    }
 
-    getDateInfo(stats, timestamp, slo): [string, string] {
-        const percentage = stats && stats[timestamp];
-        const percentageFormatted = !stats || isNaN(percentage)
-            ? 'N/A'
-            : numeral(percentage).format(percentage < 1 ? '0.00%' : '0%');
-        const dateClass = classNames({
-            'data-available': percentage && !isNaN(percentage),
-            'data-unavailable': !percentage || isNaN(percentage),
-            good: percentage && percentage >= slo,
-            bad: percentage && percentage < slo
-        });
+            <button className="close-button" onClick={onCloseClick}>×</button>
+            { data && data.length > 0 &&
+              (<button className={flipViewButtonClass} onClick={this.onFlipView}>{flipped}</button>)
+            }
+      </div>
+    );
+  }
 
-        return [percentageFormatted, dateClass];
-    };
+  getDateInfo(stats, timestamp, slo): [string, string] {
+    const percentage = stats && stats[timestamp];
+    const percentageFormatted = !stats || isNaN(percentage)
+      ? 'N/A'
+      : numeral(percentage).format(percentage < 1 ? '0.00%' : '0%');
+    const dateClass = classNames({
+      'data-available': percentage && !isNaN(percentage),
+      'data-unavailable': !percentage || isNaN(percentage),
+      good: percentage && percentage >= slo,
+      bad: percentage && percentage < slo
+    });
+    return [percentageFormatted, dateClass];
+  }
 
-    renderDay = (stats: Stats, slo: number) => ( props: DatetimeProps, currentDate: moment) => {
-        const timestamp = currentDate.valueOf();
-        const [percentageFormatted, dateClass] = this.getDateInfo(stats, timestamp, slo);
+  renderDay = (stats: Stats, slo: number) => ( props: DatetimeProps, currentDate: moment) => {
+    const timestamp = currentDate.valueOf();
+    const [percentageFormatted, dateClass] = this.getDateInfo(stats, timestamp, slo);
 
-        props.className += ` ${dateClass}`;
-        return <td {...props}>
-            <span className="date-label"> { numeral(currentDate.date()).format('00') } </span>
-            <span className="percent-label"> { percentageFormatted } </span>
-        </td>;
-    };
+    props.className += ` ${dateClass}`;
+    return <td {...props}>
+      <span className="date-label"> { numeral(currentDate.date()).format('00') } </span>
+      <span className="percent-label"> { percentageFormatted } </span>
+    </td>;
+  };
 
-    renderMonth = (stats: Stats, slo: number) => ( props: DatetimeProps, month: number, year: number) => {
-        const timestamp = moment().date(1).month(month).year(year).startOf('day').valueOf();
-        const [percentageFormatted, dateClass] = this.getDateInfo(stats, timestamp, slo);
+  renderMonth = (stats: Stats, slo: number) => ( props: DatetimeProps, month: number, year: number) => {
+    const timestamp = moment().date(1).month(month).year(year).startOf('day').valueOf();
+    const [percentageFormatted, dateClass] = this.getDateInfo(stats, timestamp, slo);
 
-        const localMoment = moment();
-        const shortMonthName = localMoment.localeData().monthsShort(localMoment.month(month)).substring(0, 3);
+    const localMoment = moment();
+    const shortMonthName = localMoment.localeData().monthsShort(localMoment.month(month)).substring(0, 3);
 
-        props.className += ` ${dateClass}`;
-        return <td {...props}>
-            <span className="date-label"> { shortMonthName } </span>
-            <span className="percent-label"> { percentageFormatted } </span>
-        </td>;
-    };
+    props.className += ` ${dateClass}`;
+    return <td {...props}>
+      <span className="date-label"> { shortMonthName } </span>
+      <span className="percent-label"> { percentageFormatted } </span>
+    </td>;
+  };
 
-    renderYear = (stats: Stats, slo: number) => ( props: DatetimeProps, year: number) => {
-        const timestamp = moment().date(1).month(0).year(year).startOf('day').valueOf();
-        const [percentageFormatted, dateClass] = this.getDateInfo(stats, timestamp, slo);
+  renderYear = (stats: Stats, slo: number) => ( props: DatetimeProps, year: number) => {
+    const timestamp = moment().date(1).month(0).year(year).startOf('day').valueOf();
+    const [percentageFormatted, dateClass] = this.getDateInfo(stats, timestamp, slo);
 
-        props.className += ` ${dateClass}`;
-        return <td {...props}>
-            <span className="date-label"> { year } </span>
-            <span className="percent-label"> { percentageFormatted } </span>
-        </td>;
-    };
+    props.className += ` ${dateClass}`;
+    return <td {...props}>
+      <span className="date-label"> { year } </span>
+      <span className="percent-label"> { percentageFormatted } </span>
+    </td>;
+  };
 
-    validateDate = (currentDate: moment) => {
-        const tomorrow = moment().startOf('day').add(1, 'day');
-        return currentDate.isBefore(tomorrow);
-    };
+  validateDate = (currentDate: moment) => {
+    const tomorrow = moment().startOf('day').add(1, 'day');
+    return currentDate.isBefore(tomorrow);
+  };
 
-    onFlipView = () => this.setState({flipped: !this.state.flipped});
+  onFlipView = () => this.setState({flipped: !this.state.flipped});
 
-    xAxisTickFormatter = (val) => moment(val).format(fullDateFormat);
+  xAxisTickFormatter = (val) => moment(val).format(fullDateFormat);
 
-    yAxisTickFormatter = (val) => numeral(val).format('0%');
+  yAxisTickFormatter = (val) => numeral(val).format('0%');
 }
 
 const select = (state: State) => ({

@@ -1,4 +1,4 @@
-import { takeLatest, takeEvery, call, put, fork, select } from 'redux-saga/effects';
+import { takeLatest, call, put, fork, select } from 'redux-saga/effects';
 import { delay } from 'redux-saga';
 import { navigate } from 'redux-url';
 import moment from 'moment';
@@ -113,10 +113,10 @@ export function* watchFetchStats() {
 }
 
 export function* handleFetchStats(action) {
-    const stats = yield select(state => state.stats.data);
-    if (!stats || !stats[action.startDate]) {
-      yield call(fetchStats, action);
-    }
+  const stats = yield select(state => state.stats.data);
+  if (!stats || !stats[action.startDate]) {
+    yield call(fetchStats, action);
+  }
 }
 
 // polling service

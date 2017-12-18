@@ -242,8 +242,7 @@ export default function reducers(state: State = initState, action: Action): Stat
           isLoading: true
         }
       };
-      case 'FETCH_STATS_SUCCESS':
-
+    case 'FETCH_STATS_SUCCESS':
       return {
         ...state,
         stats: {

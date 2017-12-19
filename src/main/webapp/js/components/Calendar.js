@@ -131,18 +131,19 @@ class Calendar extends PureComponent {
               />
               { data && data.length > 0 &&
                 (<ResponsiveContainer className="back" width="100%" height="100%">
-                    <BarChart data={data} margin={{left: -20}}>
+                    <BarChart data={data} margin={{left: -10, right:20}}>
                         <XAxis dataKey="date" tickFormatter={this.xAxisTickFormatter}/>
                         <YAxis domain={buildDomain(data, slo)}
                                tickFormatter={this.yAxisTickFormatter}/>
                         <Tooltip content={<CustomChartTooltip payload label active/>}/>
-                        <Brush dataKey='date' height={30} tickFormatter={val => ''}
+                        <Brush dataKey='date' height={30} tickFormatter={ _ => '' }
                                startIndex={Math.max(0, data.length - 31)}
                                endIndex={Math.max(0, data.length - 1)}
                                travellerWidth={10}/>
                         <Bar dataKey="percent" shape={<ThresholdFillBar y x width height value threshold={slo}/>}/>
-                      <ReferenceLine y={slo}>
-                        <Label value="SLO" offset={5} position="bottom" />
+                      <ReferenceLine y={slo} alwaysShow isFront>
+                        <Label value={this.formatPercentage(slo)} offset={5} position="left" />
+                        <Label value="SLO" offset={-5} position="right" />
                       </ReferenceLine>
                     </BarChart>
                 </ResponsiveContainer>)
@@ -157,11 +158,13 @@ class Calendar extends PureComponent {
     );
   }
 
+  formatPercentage = (val: number): string => numeral(val).format(val < 1 ? '0.00%' : '0%');
+
   getDateInfo(stats, timestamp, slo): [string, string] {
     const percentage = stats && stats[timestamp];
     const percentageFormatted = !stats || isNaN(percentage)
       ? 'N/A'
-      : numeral(percentage).format(percentage < 1 ? '0.00%' : '0%');
+      : this.formatPercentage(percentage)
     const dateClass = classNames({
       'data-available': percentage && !isNaN(percentage),
       'data-unavailable': !percentage || isNaN(percentage),

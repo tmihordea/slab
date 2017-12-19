@@ -5,7 +5,7 @@ import moment from 'moment';
 import numeral from 'numeral';
 import classNames from 'classnames';
 import Datetime from 'react-datetime';
-import {BarChart, Bar, XAxis, YAxis, Tooltip, Brush, ReferenceLine, ResponsiveContainer} from 'recharts';
+import {BarChart, Bar, XAxis, YAxis, Tooltip, Label, Brush, ReferenceLine, ResponsiveContainer} from 'recharts';
 
 import type {Stats, State, StatsGroup} from '../state';
 import { fetchStats } from '../actions';
@@ -136,12 +136,14 @@ class Calendar extends PureComponent {
                         <YAxis domain={buildDomain(data, slo)}
                                tickFormatter={this.yAxisTickFormatter}/>
                         <Tooltip content={<CustomChartTooltip payload label active/>}/>
-                        <Brush dataKey='date' height={30} tickFormatter={this.xAxisTickFormatter}
+                        <Brush dataKey='date' height={30} tickFormatter={val => ''}
                                startIndex={Math.max(0, data.length - 31)}
                                endIndex={Math.max(0, data.length - 1)}
                                travellerWidth={10}/>
                         <Bar dataKey="percent" shape={<ThresholdFillBar y x width height value threshold={slo}/>}/>
-                        <ReferenceLine y={slo} label="SLO"/>
+                      <ReferenceLine y={slo}>
+                        <Label value="SLO" offset={5} position="bottom" />
+                      </ReferenceLine>
                     </BarChart>
                 </ResponsiveContainer>)
               }

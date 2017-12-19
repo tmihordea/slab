@@ -34,7 +34,7 @@ var config = {
             'transform-exponentiation-operator'
           ]
         },
-        include: [path.join(__dirname, 'src'), path.resolve(__dirname, "node_modules/recharts/es6")] //recharts es6 needed
+        include: [path.join(__dirname, 'src')]
       },
       {
         test: /\.styl/,
